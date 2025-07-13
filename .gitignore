@@ -9,3 +9,5 @@ __pycache__/
 .DS_Store
 .idea/
 .vscode/
+# → Ignorar el seeder de cámara
+seed_db.py

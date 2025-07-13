@@ -9,9 +9,9 @@ load_dotenv(dotenv_path)
 
 DB_USER = os.getenv("DB_USER")
 DB_PASS = urllib.parse.quote_plus(os.getenv("DB_PASSWORD", ""))
-DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
+DB_HOST = os.getenv("DB_HOST", "52.7.233.59")
 DB_PORT = os.getenv("DB_PORT", "3306")
-DB_NAME = os.getenv("DB_NAME", "sensors_db")
+DB_NAME = os.getenv("DB_NAME", "data")
 
 DATABASE_URL = (
     f"mysql+pymysql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"

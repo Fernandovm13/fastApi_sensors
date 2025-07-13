@@ -1,27 +1,14 @@
 from fastapi import FastAPI, HTTPException
 import uvicorn
-import threading
-import time
 
 from routes import camera, gas, motion, particle
 
-from simulators.camera_simulator import simulate_camera_once
-from simulators.gas_simulator import simulate_gas_once
-from simulators.motion_simulator import simulate_motion_once
-from simulators.particle_simulator import simulate_particle_once
-
-from services.gas_service import create_gas, get_gas
-from services.motion_service import create_motion, get_motion
-from services.particle_service import create_particle, get_particle
-from services.camera_service import create_camera, get_camera
-
-from schemas.gas import GasDataCreate
-from schemas.motion import MotionDataCreate
-from schemas.particle import ParticleDataCreate
-from schemas.camera import CameraDataCreate
+from services.gas_service import get_gas
+from services.motion_service import get_motion
+from services.particle_service import get_particle
+from services.camera_service import get_camera
 
 from db.connection import create_tables, SessionLocal
-from models.motion import MotionSensor
 
 app = FastAPI(title="Sensor API Simple")
 
@@ -66,55 +53,10 @@ def latest_camera():
         raise HTTPException(404, "No hay datos de cámara")
     return data[-1]
 
-def loop_simulator(name, simulate_fn, store_fn, schema_cls):
-
-    while True:
-        if name == "CAMERA":
-            db = SessionLocal()
-            last = (
-                db.query(MotionSensor.id)
-                  .order_by(MotionSensor.timestamp.desc())
-                  .limit(1)
-                  .one_or_none()
-            )
-            db.close()
-            if last is None:
-                time.sleep(1)
-                continue
-            motion_id = last[0]
-            data = simulate_fn(motion_id)
-
-        else:
-            data = simulate_fn()
-
-        db = SessionLocal()
-        store_fn(db, schema_cls(**data.dict()))
-        db.commit()
-        db.close()
-
-        print(f"[{name}]", data.json())
-        time.sleep(2)
-
-def start_simulators():
-    simulators = [
-        ("GAS",      simulate_gas_once,      create_gas,     GasDataCreate),
-        ("MOTION",   simulate_motion_once,   create_motion,  MotionDataCreate),
-        ("PARTICLE", simulate_particle_once, create_particle, ParticleDataCreate),
-        ("CAMERA",   simulate_camera_once,   create_camera,  CameraDataCreate),
-    ]
-    for name, sim_fn, store_fn, schema in simulators:
-        t = threading.Thread(
-            target=loop_simulator,
-            args=(name, sim_fn, store_fn, schema),
-            daemon=True
-        )
-        t.start()
-
 @app.on_event("startup")
 def startup_event():
     create_tables()
-    print("Iniciando simuladores...")
-    start_simulators()
+    print("API iniciada. Las tablas de base de datos están listas.")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
