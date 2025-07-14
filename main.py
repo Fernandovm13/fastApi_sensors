@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import threading
 import time
+import os
 
 from routes import camera, gas, motion, particle
 
@@ -26,19 +27,27 @@ from models.motion import MotionSensor
 
 app = FastAPI(title="Sensor API Simple")
 
-# Configuración de CORS
+# Configuración CORS robusta para React y AWS
+def get_allowed_origins():
+    """Obtiene los orígenes permitidos desde variables de entorno o valores por defecto"""
+    # Para desarrollo local con React
+    default_origins = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
+    
+    # Orígenes adicionales desde variables de entorno (para AWS/producción)
+    env_origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
+    env_origins = [origin.strip() for origin in env_origins if origin.strip()]
+    
+    # Combinar orígenes por defecto con los de entorno
+    all_origins = default_origins + env_origins
+    
+    return list(set(all_origins))  # Eliminar duplicados
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:3001", 
-        "http://localhost:8080",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:3001",
-        "http://127.0.0.1:8080",
-        "http://localhost:5173",  # Vite dev server
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=get_allowed_origins(),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -134,6 +143,7 @@ def startup_event():
     create_tables()
     print("Iniciando simuladores...")
     start_simulators()
+    print(f"CORS configurado para: {get_allowed_origins()}")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
