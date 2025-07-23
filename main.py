@@ -10,9 +10,6 @@ from models.camera import CameraCapture
 from sqlalchemy import desc
 
 from db.connection import create_tables, SessionLocal
-from utils.time_utils import get_period_bounds_and_label
-from routes import camera, gas, motion, particle
-from routes import correlation
 
 app = FastAPI(title="Sensor API Simple")
 
